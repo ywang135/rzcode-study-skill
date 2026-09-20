@@ -1,0 +1,35 @@
+{
+  "name": "delete_book",
+  "description": "Delete a book and all related resources (chapters, notes, relationships).",
+  "displayName": "删除书籍",
+  "category": "write",
+  "endpoint": "DELETE /api/study/books/<title>",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "title": {
+        "type": "string",
+        "description": "Book title"
+      }
+    },
+    "required": [
+      "title"
+    ]
+  },
+  "examples": [
+    {
+      "description": "删除书籍",
+      "input": {
+        "title": "控制论"
+      }
+    }
+  ],
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "success": {
+        "type": "boolean"
+      }
+    }
+  }
+}

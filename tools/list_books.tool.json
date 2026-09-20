@@ -1,0 +1,32 @@
+{
+  "name": "list_books",
+  "description": "List all books for the current user. Requires authentication via API key or login.",
+  "displayName": "列出所有书籍",
+  "category": "read",
+  "endpoint": "GET /api/study/books/",
+  "inputSchema": {
+    "type": "object",
+    "properties": {},
+    "required": []
+  },
+  "examples": [
+    {
+      "description": "获取前20本书",
+      "input": {
+        "limit": 20,
+        "offset": 0
+      }
+    }
+  ],
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "books": {
+        "type": "array"
+      },
+      "total": {
+        "type": "integer"
+      }
+    }
+  }
+}

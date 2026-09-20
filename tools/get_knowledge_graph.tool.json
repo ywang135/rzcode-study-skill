@@ -1,0 +1,47 @@
+{
+  "name": "get_knowledge_graph",
+  "description": "Get knowledge graph subgraph for a concept.",
+  "displayName": "获取知识图谱",
+  "category": "read",
+  "endpoint": "GET /api/study/graphs/<name>",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string",
+        "description": "Concept/Book/Chapter name"
+      },
+      "depth": {
+        "type": "integer",
+        "description": "Graph depth (1-5, default: 1)"
+      },
+      "max_nodes": {
+        "type": "integer",
+        "description": "Maximum nodes to return (1-500, default: 100)"
+      }
+    },
+    "required": [
+      "name"
+    ]
+  },
+  "examples": [
+    {
+      "description": "获取知识图谱",
+      "input": {
+        "name": "feedback",
+        "depth": 2
+      }
+    }
+  ],
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "nodes": {
+        "type": "array"
+      },
+      "edges": {
+        "type": "array"
+      }
+    }
+  }
+}

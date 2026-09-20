@@ -1,0 +1,58 @@
+{
+  "name": "upsert_mentioned_in",
+  "description": "Create or update concept-chapter relationships.",
+  "displayName": "创建提及关系",
+  "category": "write",
+  "endpoint": "POST /api/study/relationships/mentioned_in",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "concept_title": {
+        "type": "string",
+        "description": "Concept title"
+      },
+      "chapter_title": {
+        "type": "string",
+        "description": "Chapter title"
+      },
+      "role": {
+        "type": "string",
+        "description": "Concept role (e.g., introduced, applied)"
+      },
+      "quote": {
+        "type": "string",
+        "description": "Quote or explanation (optional)"
+      },
+      "source": {
+        "type": "string",
+        "enum": [
+          "agent",
+          "user"
+        ],
+        "description": "Relationship source (default: user)"
+      }
+    },
+    "required": [
+      "concept_title",
+      "chapter_title",
+      "role"
+    ]
+  },
+  "examples": [
+    {
+      "description": "创建提及关系",
+      "input": {
+        "concept_title": "反馈",
+        "chapter_title": "第1章"
+      }
+    }
+  ],
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "success": {
+        "type": "boolean"
+      }
+    }
+  }
+}

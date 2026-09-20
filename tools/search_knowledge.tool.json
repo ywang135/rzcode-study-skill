@@ -1,0 +1,46 @@
+{
+  "name": "search_knowledge",
+  "description": "Search concepts in knowledge graph.",
+  "displayName": "搜索知识库",
+  "category": "read",
+  "endpoint": "GET /api/study/search",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "q": {
+        "type": "string",
+        "description": "Search query"
+      },
+      "limit": {
+        "type": "integer",
+        "description": "Maximum results (default: 20, max: 100)"
+      },
+      "offset": {
+        "type": "integer",
+        "description": "Number of results to skip (default: 0)"
+      }
+    },
+    "required": [
+      "q"
+    ]
+  },
+  "examples": [
+    {
+      "description": "搜索",
+      "input": {
+        "query": "反馈"
+      }
+    }
+  ],
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "results": {
+        "type": "array"
+      },
+      "total": {
+        "type": "integer"
+      }
+    }
+  }
+}

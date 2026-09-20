@@ -1,0 +1,54 @@
+{
+  "name": "upsert_book",
+  "description": "Create or update a book.",
+  "displayName": "新建/更新书籍",
+  "category": "write",
+  "endpoint": "POST /api/study/books/<title>",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "title": {
+        "type": "string",
+        "description": "Book title"
+      },
+      "authors": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "description": "Book authors (optional)"
+      },
+      "edition": {
+        "type": "string",
+        "description": "Book edition (optional)"
+      },
+      "file_path": {
+        "type": "string",
+        "description": "Path to book file (optional)"
+      }
+    },
+    "required": [
+      "title"
+    ]
+  },
+  "examples": [
+    {
+      "description": "创建书籍",
+      "input": {
+        "title": "控制论",
+        "authors": "万百五"
+      }
+    }
+  ],
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "string"
+      },
+      "title": {
+        "type": "string"
+      }
+    }
+  }
+}

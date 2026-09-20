@@ -1,0 +1,60 @@
+{
+  "name": "get_note",
+  "description": "Get note content for a node.",
+  "displayName": "获取笔记内容",
+  "category": "read",
+  "endpoint": "GET /api/study/notes/<node_type>/<node_identifier>/<note_id>",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "node_type": {
+        "type": "string",
+        "enum": [
+          "book",
+          "chapter",
+          "concept"
+        ],
+        "description": "Node type"
+      },
+      "node_identifier": {
+        "type": "string",
+        "description": "Node identifier"
+      },
+      "note_id": {
+        "type": "string",
+        "description": "Note ID"
+      },
+      "format": {
+        "type": "string",
+        "enum": [
+          "json",
+          "raw"
+        ],
+        "description": "Response format (default: json)"
+      }
+    },
+    "required": [
+      "node_type",
+      "node_identifier",
+      "note_id"
+    ]
+  },
+  "examples": [
+    {
+      "description": "获取笔记",
+      "input": {
+        "node_type": "concept",
+        "node_identifier": "feedback",
+        "note_id": "1"
+      }
+    }
+  ],
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "content": {
+        "type": "string"
+      }
+    }
+  }
+}

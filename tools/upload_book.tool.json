@@ -1,0 +1,40 @@
+{
+  "name": "upload_book",
+  "description": "Upload a book file for an existing book. Expects multipart/form-data with 'file' field.",
+  "displayName": "上传书籍文件",
+  "category": "write",
+  "endpoint": "POST /api/study/books/<title>/upload",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "title": {
+        "type": "string",
+        "description": "Book title"
+      },
+      "file": {
+        "type": "string",
+        "description": "File to upload (path or base64)"
+      }
+    },
+    "required": [
+      "title",
+      "file"
+    ]
+  },
+  "examples": [
+    {
+      "description": "上传PDF",
+      "input": {
+        "title": "控制论"
+      }
+    }
+  ],
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "file_path": {
+        "type": "string"
+      }
+    }
+  }
+}

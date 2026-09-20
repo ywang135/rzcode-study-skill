@@ -1,0 +1,59 @@
+{
+  "name": "upsert_chapter",
+  "description": "Create or update a chapter in a book.",
+  "displayName": "新建/更新章节",
+  "category": "write",
+  "endpoint": "POST /api/study/books/<book_title>/chapters/<chapter_title>",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "book_title": {
+        "type": "string",
+        "description": "Book title"
+      },
+      "title": {
+        "type": "string",
+        "description": "Chapter title"
+      },
+      "level": {
+        "type": "integer",
+        "description": "Chapter level in hierarchy"
+      },
+      "order": {
+        "type": "integer",
+        "description": "Order within parent or book"
+      },
+      "summary": {
+        "type": "string",
+        "description": "Chapter summary (optional)"
+      },
+      "parent_title": {
+        "type": "string",
+        "description": "Parent chapter title for nested chapters (optional)"
+      }
+    },
+    "required": [
+      "book_title",
+      "title",
+      "level",
+      "order"
+    ]
+  },
+  "examples": [
+    {
+      "description": "创建章节",
+      "input": {
+        "book_title": "控制论",
+        "chapter_title": "第1章"
+      }
+    }
+  ],
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "title": {
+        "type": "string"
+      }
+    }
+  }
+}

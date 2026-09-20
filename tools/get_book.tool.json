@@ -1,0 +1,38 @@
+{
+  "name": "get_book",
+  "description": "Get book details and chapters.",
+  "displayName": "获取书籍详情",
+  "category": "read",
+  "endpoint": "GET /api/study/books/<title>",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "title": {
+        "type": "string",
+        "description": "Book title"
+      }
+    },
+    "required": [
+      "title"
+    ]
+  },
+  "examples": [
+    {
+      "description": "获取书籍详情",
+      "input": {
+        "title": "控制论"
+      }
+    }
+  ],
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "string"
+      },
+      "title": {
+        "type": "string"
+      }
+    }
+  }
+}

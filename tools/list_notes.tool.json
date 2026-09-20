@@ -1,0 +1,54 @@
+{
+  "name": "list_notes",
+  "description": "List note metadata for a node.",
+  "displayName": "列出笔记",
+  "category": "read",
+  "endpoint": "GET /api/study/notes/<node_type>/<node_identifier>",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "node_type": {
+        "type": "string",
+        "enum": [
+          "book",
+          "chapter",
+          "concept"
+        ],
+        "description": "Node type"
+      },
+      "node_identifier": {
+        "type": "string",
+        "description": "Node identifier"
+      },
+      "limit": {
+        "type": "integer",
+        "description": "Maximum results (default: 100, max: 100)"
+      },
+      "offset": {
+        "type": "integer",
+        "description": "Number of results to skip (default: 0)"
+      }
+    },
+    "required": [
+      "node_type",
+      "node_identifier"
+    ]
+  },
+  "examples": [
+    {
+      "description": "列出笔记",
+      "input": {
+        "node_type": "concept",
+        "node_identifier": "feedback"
+      }
+    }
+  ],
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "notes": {
+        "type": "array"
+      }
+    }
+  }
+}

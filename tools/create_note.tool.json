@@ -1,0 +1,69 @@
+{
+  "name": "create_note",
+  "description": "Create or update a text note for a node (book, chapter, or concept).",
+  "displayName": "创建笔记",
+  "category": "write",
+  "endpoint": "POST /api/study/notes/<node_type>/<node_identifier>",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "node_type": {
+        "type": "string",
+        "enum": [
+          "book",
+          "chapter",
+          "concept"
+        ],
+        "description": "Node type"
+      },
+      "node_identifier": {
+        "type": "string",
+        "description": "Node identifier"
+      },
+      "title": {
+        "type": "string",
+        "description": "Note title"
+      },
+      "content": {
+        "type": "string",
+        "description": "Note content"
+      },
+      "description": {
+        "type": "string",
+        "description": "Note description (optional)"
+      },
+      "file_type": {
+        "type": "string",
+        "description": "File type (default: md)"
+      },
+      "note_id": {
+        "type": "string",
+        "description": "Note ID for updates (optional)"
+      }
+    },
+    "required": [
+      "node_type",
+      "node_identifier",
+      "title",
+      "content"
+    ]
+  },
+  "examples": [
+    {
+      "description": "创建笔记",
+      "input": {
+        "node_type": "concept",
+        "node_identifier": "feedback",
+        "title": "笔记"
+      }
+    }
+  ],
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "note_id": {
+        "type": "string"
+      }
+    }
+  }
+}

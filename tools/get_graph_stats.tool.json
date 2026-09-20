@@ -1,0 +1,26 @@
+{
+  "name": "get_graph_stats",
+  "description": "Get knowledge graph statistics (concepts, books, chapters, notes, relationships).",
+  "displayName": "获取图统计信息",
+  "category": "read",
+  "endpoint": "GET /api/study/graphs/stats",
+  "inputSchema": {
+    "type": "object",
+    "properties": {},
+    "required": []
+  },
+  "examples": [
+    {
+      "description": "获取统计",
+      "input": {}
+    }
+  ],
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "total_concepts": {
+        "type": "integer"
+      }
+    }
+  }
+}

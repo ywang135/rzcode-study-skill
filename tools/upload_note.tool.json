@@ -1,0 +1,63 @@
+{
+  "name": "upload_note",
+  "description": "Upload a file note for a node (book, chapter, or concept).",
+  "displayName": "上传笔记文件",
+  "category": "write",
+  "endpoint": "POST /api/study/notes/<node_type>/<node_identifier>/upload",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "node_type": {
+        "type": "string",
+        "enum": [
+          "book",
+          "chapter",
+          "concept"
+        ],
+        "description": "Node type"
+      },
+      "node_identifier": {
+        "type": "string",
+        "description": "Node identifier"
+      },
+      "file": {
+        "type": "string",
+        "description": "File to upload (path or base64)"
+      },
+      "title": {
+        "type": "string",
+        "description": "Note title (optional)"
+      },
+      "description": {
+        "type": "string",
+        "description": "Note description (optional)"
+      },
+      "note_id": {
+        "type": "string",
+        "description": "Note ID for updates (optional)"
+      }
+    },
+    "required": [
+      "node_type",
+      "node_identifier",
+      "file"
+    ]
+  },
+  "examples": [
+    {
+      "description": "上传笔记",
+      "input": {
+        "node_type": "concept",
+        "node_identifier": "feedback"
+      }
+    }
+  ],
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "note_id": {
+        "type": "string"
+      }
+    }
+  }
+}

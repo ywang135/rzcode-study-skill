@@ -1,0 +1,69 @@
+{
+  "name": "upsert_part_of",
+  "description": "Create or update book-chapter or chapter-chapter hierarchy relationships.",
+  "displayName": "创建包含关系",
+  "category": "write",
+  "endpoint": "POST /api/study/relationships/part_of",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "parent_title": {
+        "type": "string",
+        "description": "Parent book or chapter title"
+      },
+      "parent_type": {
+        "type": "string",
+        "enum": [
+          "book",
+          "chapter"
+        ],
+        "description": "Parent type"
+      },
+      "child_title": {
+        "type": "string",
+        "description": "Child chapter title"
+      },
+      "level": {
+        "type": "integer",
+        "description": "Chapter level in hierarchy"
+      },
+      "order": {
+        "type": "integer",
+        "description": "Order within parent"
+      },
+      "source": {
+        "type": "string",
+        "enum": [
+          "agent",
+          "user"
+        ],
+        "description": "Relationship source (default: user)"
+      }
+    },
+    "required": [
+      "parent_title",
+      "parent_type",
+      "child_title",
+      "level",
+      "order"
+    ]
+  },
+  "examples": [
+    {
+      "description": "创建包含关系",
+      "input": {
+        "parent_title": "控制论",
+        "parent_type": "book",
+        "child_title": "第1章"
+      }
+    }
+  ],
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "success": {
+        "type": "boolean"
+      }
+    }
+  }
+}

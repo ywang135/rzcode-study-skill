@@ -1,0 +1,35 @@
+{
+  "name": "delete_concept",
+  "description": "Delete a concept and related resources (notes, relationships).",
+  "displayName": "删除概念",
+  "category": "write",
+  "endpoint": "DELETE /api/study/concepts/<name>",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string",
+        "description": "Concept name"
+      }
+    },
+    "required": [
+      "name"
+    ]
+  },
+  "examples": [
+    {
+      "description": "删除概念",
+      "input": {
+        "name": "feedback"
+      }
+    }
+  ],
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "success": {
+        "type": "boolean"
+      }
+    }
+  }
+}

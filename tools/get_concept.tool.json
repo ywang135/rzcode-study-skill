@@ -1,0 +1,38 @@
+{
+  "name": "get_concept",
+  "description": "Get concept details by name.",
+  "displayName": "获取概念详情",
+  "category": "read",
+  "endpoint": "GET /api/study/concepts/<name>",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string",
+        "description": "Concept name"
+      }
+    },
+    "required": [
+      "name"
+    ]
+  },
+  "examples": [
+    {
+      "description": "获取概念",
+      "input": {
+        "name": "feedback"
+      }
+    }
+  ],
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "canonical_name": {
+        "type": "string"
+      },
+      "definition": {
+        "type": "string"
+      }
+    }
+  }
+}

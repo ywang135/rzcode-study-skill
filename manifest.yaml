@@ -1,0 +1,120 @@
+name: rzcode-study-skill
+version: 2.0.0
+
+metadata:
+  display_name: "RZCode Study Skill"
+  description: "通过云端 API 对接 RZCode 学习知识库，管理书籍、概念、笔记和知识关系"
+  author: "Yi Wang"
+  maintainer: "RZCode Team"
+  license: "MIT"
+  keywords:
+    - knowledge_graph
+    - learning
+    - study
+    - summarization
+    - api
+    - tools
+    - rzcode
+  category: "knowledge_management"
+  tags:
+    - learning
+    - knowledge_graph
+    - api
+    - agent_skills
+    - rzcode
+
+requirements:
+  python: ">=3.9"
+  packages:
+    - requests>=2.28
+    - pydantic>=2.0
+
+agent_compatibility:
+  - copilot
+  - codex
+  - claude
+  - workbuddy
+  - codebase_agent
+
+entry_point: SKILL.md
+
+instructions:
+  - path: instructions/00-overview.md
+    label: "新手指南"
+    description: "快速开始和核心概念速查"
+  - path: instructions/10-workflow.md
+    label: "核心工作流"
+    description: "常见使用场景和工作流"
+  - path: instructions/20-tools.md
+    label: "工具参考"
+    description: "所有 API 工具的完整参考"
+  - path: instructions/30-advanced.md
+    label: "高级主题"
+    description: "批量操作、性能优化、故障排查"
+
+tools:
+  - path: tools/list_books.tool.json
+  - path: tools/upload_book.tool.json
+  - path: tools/get_book.tool.json
+  - path: tools/list_chapters.tool.json
+  - path: tools/get_chapter.tool.json
+  - path: tools/upsert_book.tool.json
+  - path: tools/delete_book.tool.json
+  - path: tools/upsert_chapter.tool.json
+  - path: tools/delete_chapter.tool.json
+  - path: tools/get_book_file.tool.json
+  - path: tools/get_concept.tool.json
+  - path: tools/upsert_concept.tool.json
+  - path: tools/delete_concept.tool.json
+  - path: tools/get_knowledge_graph.tool.json
+  - path: tools/get_graph_stats.tool.json
+  - path: tools/create_note.tool.json
+  - path: tools/upload_note.tool.json
+  - path: tools/get_note.tool.json
+  - path: tools/list_notes.tool.json
+  - path: tools/delete_note.tool.json
+  - path: tools/upsert_part_of.tool.json
+  - path: tools/upsert_mentioned_in.tool.json
+  - path: tools/upsert_related_to.tool.json
+  - path: tools/upsert_prerequisite_for.tool.json
+  - path: tools/search_knowledge.tool.json
+
+resources:
+  documentation:
+    - path: resources/docs/canonical_naming.md
+      description: "规范命名规则和检查清单"
+
+configuration:
+  api:
+    production:
+      api_host: "https://rzcode.vip"
+      base_url: "https://rzcode.vip/api/study"
+      auth_header: "X-API-Key"
+    development:
+      api_host: "http://localhost:8000"
+      base_url: "http://localhost:8000/api/study"
+      auth_header: "X-API-Key"
+      
+  config_file:
+    path: "~/.rzcode/config.json"
+    description: "API key 和 host 配置"
+
+capabilities:
+  read:
+    - concept
+    - book
+    - chapter
+    - search
+  write:
+    - concept
+    - book
+    - chapter
+    - mentioned_in_edge
+    - prerequisite_edge
+    - related_to_edge
+  update:
+    - concept
+  query:
+    - full_text_search
+    - subgraph_traversal
+    - concept_chain

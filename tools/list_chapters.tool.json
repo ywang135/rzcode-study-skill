@@ -1,0 +1,35 @@
+{
+  "name": "list_chapters",
+  "description": "List all chapters for a book.",
+  "displayName": "列出书籍章节",
+  "category": "read",
+  "endpoint": "GET /api/study/books/<title>/chapters",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "title": {
+        "type": "string",
+        "description": "Book title"
+      }
+    },
+    "required": [
+      "title"
+    ]
+  },
+  "examples": [
+    {
+      "description": "获取书籍章节",
+      "input": {
+        "title": "控制论"
+      }
+    }
+  ],
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "chapters": {
+        "type": "array"
+      }
+    }
+  }
+}

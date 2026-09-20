@@ -1,0 +1,69 @@
+{
+  "name": "upsert_concept",
+  "description": "Create or update a concept.",
+  "displayName": "新建/更新概念",
+  "category": "write",
+  "endpoint": "POST /api/study/concepts/<name>",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string",
+        "description": "Concept name"
+      },
+      "canonical_name": {
+        "type": "string",
+        "description": "Canonical name (unique identifier)"
+      },
+      "kind": {
+        "type": "string",
+        "enum": [
+          "concept",
+          "theorem",
+          "definition",
+          "method",
+          "person",
+          "term"
+        ],
+        "description": "Concept type"
+      },
+      "definition": {
+        "type": "string",
+        "description": "Concept definition"
+      },
+      "aliases": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "description": "List of aliases (optional)"
+      },
+      "summary": {
+        "type": "string",
+        "description": "Concept summary (optional)"
+      }
+    },
+    "required": [
+      "name",
+      "kind",
+      "definition"
+    ]
+  },
+  "examples": [
+    {
+      "description": "创建概念",
+      "input": {
+        "name": "feedback",
+        "definition": "反馈..."
+      }
+    }
+  ],
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "canonical_name": {
+        "type": "string"
+      }
+    }
+  }
+}

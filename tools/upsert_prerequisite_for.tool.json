@@ -1,0 +1,49 @@
+{
+  "name": "upsert_prerequisite_for",
+  "description": "Create or update concept prerequisite relationships.",
+  "displayName": "创建前置关系",
+  "category": "write",
+  "endpoint": "POST /api/study/relationships/prerequisite_for",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "prerequisite_concept_title": {
+        "type": "string",
+        "description": "Prerequisite concept title"
+      },
+      "dependent_concept_title": {
+        "type": "string",
+        "description": "Dependent concept title"
+      },
+      "source": {
+        "type": "string",
+        "enum": [
+          "agent",
+          "user"
+        ],
+        "description": "Relationship source (default: user)"
+      }
+    },
+    "required": [
+      "prerequisite_concept_title",
+      "dependent_concept_title"
+    ]
+  },
+  "examples": [
+    {
+      "description": "创建前置关系",
+      "input": {
+        "prerequisite_concept_title": "系统",
+        "dependent_concept_title": "控制"
+      }
+    }
+  ],
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "success": {
+        "type": "boolean"
+      }
+    }
+  }
+}

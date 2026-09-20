@@ -1,0 +1,41 @@
+{
+  "name": "delete_chapter",
+  "description": "Delete a chapter and related resources (notes, relationships).",
+  "displayName": "删除章节",
+  "category": "write",
+  "endpoint": "DELETE /api/study/books/<book_title>/chapters/<chapter_title>",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "book_title": {
+        "type": "string",
+        "description": "Book title"
+      },
+      "chapter_title": {
+        "type": "string",
+        "description": "Chapter title"
+      }
+    },
+    "required": [
+      "book_title",
+      "chapter_title"
+    ]
+  },
+  "examples": [
+    {
+      "description": "删除章节",
+      "input": {
+        "book_title": "控制论",
+        "chapter_title": "第1章"
+      }
+    }
+  ],
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "success": {
+        "type": "boolean"
+      }
+    }
+  }
+}

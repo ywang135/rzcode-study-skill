@@ -1,0 +1,63 @@
+# Skill 打包时忽略的文件和目录
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# 测试覆盖
+.coverage
+htmlcov/
+
+# 临时文件
+*.tmp
+*.log
+*.bak
+
+# 数据文件
+*.db
+*.sqlite
+neo4j/data/
+neo4j/logs/
+
+# 开发用配置
+.env.local
+.env.dev
+test_config.yaml
+
+# Git
+.git/
+.gitignore
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.circleci/
+
+# 大文件
+*.pdf
+*.zip
+*.tar.gz
+/data/
+/build/
+/dist/
+
+# 文档生成
+docs/_build/
+site/
+
+# 动态生成的文件
+*.generated.md
+MANIFEST.in

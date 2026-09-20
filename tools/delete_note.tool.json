@@ -1,0 +1,52 @@
+{
+  "name": "delete_note",
+  "description": "Delete a note from a node.",
+  "displayName": "删除笔记",
+  "category": "write",
+  "endpoint": "DELETE /api/study/notes/<node_type>/<node_identifier>/<note_id>",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "node_type": {
+        "type": "string",
+        "enum": [
+          "book",
+          "chapter",
+          "concept"
+        ],
+        "description": "Node type"
+      },
+      "node_identifier": {
+        "type": "string",
+        "description": "Node identifier"
+      },
+      "note_id": {
+        "type": "string",
+        "description": "Note ID"
+      }
+    },
+    "required": [
+      "node_type",
+      "node_identifier",
+      "note_id"
+    ]
+  },
+  "examples": [
+    {
+      "description": "删除笔记",
+      "input": {
+        "node_type": "concept",
+        "node_identifier": "feedback",
+        "note_id": "1"
+      }
+    }
+  ],
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "success": {
+        "type": "boolean"
+      }
+    }
+  }
+}

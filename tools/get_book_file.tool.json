@@ -1,0 +1,46 @@
+{
+  "name": "get_book_file",
+  "description": "Get book file content in JSON or raw format.",
+  "displayName": "获取书籍文件内容",
+  "category": "read",
+  "endpoint": "GET /api/study/books/files/<encoded_file_path>",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "encoded_file_path": {
+        "type": "string",
+        "description": "URL-encoded file path"
+      },
+      "format": {
+        "type": "string",
+        "enum": [
+          "json",
+          "raw"
+        ],
+        "description": "Response format (default: raw)"
+      }
+    },
+    "required": [
+      "encoded_file_path"
+    ]
+  },
+  "examples": [
+    {
+      "description": "获取文件",
+      "input": {
+        "encoded_file_path": "path/to/book.pdf"
+      }
+    }
+  ],
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "path": {
+        "type": "string"
+      },
+      "content": {
+        "type": "string"
+      }
+    }
+  }
+}

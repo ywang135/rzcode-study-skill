@@ -1,0 +1,53 @@
+{
+  "name": "upsert_related_to",
+  "description": "Create or update concept-concept relationships.",
+  "displayName": "创建关联关系",
+  "category": "write",
+  "endpoint": "POST /api/study/relationships/related_to",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "concept_title_1": {
+        "type": "string",
+        "description": "First concept title"
+      },
+      "concept_title_2": {
+        "type": "string",
+        "description": "Second concept title"
+      },
+      "relationship": {
+        "type": "string",
+        "description": "Type of relationship (e.g., related, similar)"
+      },
+      "source": {
+        "type": "string",
+        "enum": [
+          "agent",
+          "user"
+        ],
+        "description": "Relationship source (default: user)"
+      }
+    },
+    "required": [
+      "concept_title_1",
+      "concept_title_2"
+    ]
+  },
+  "examples": [
+    {
+      "description": "创建关联",
+      "input": {
+        "concept_title_1": "反馈",
+        "concept_title_2": "控制"
+      }
+    }
+  ],
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "success": {
+        "type": "boolean"
+      }
+    }
+  }
+}
