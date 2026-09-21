@@ -1,6 +1,6 @@
 ---
 name: rzcode-study-skill
-version: 2.0.0
+version: 2.0.1
 description: "通过云端 API 对接 RZCode 学习知识库，管理书籍、概念、笔记和知识关系"
 category: knowledge_management
 tags:
@@ -81,9 +81,14 @@ print(f"Total books: {len(books.get('books', []))}")
 └─ 关系
    ├─ MENTIONED_IN: 在哪些章节出现
    ├─ RELATED_TO: 相关概念
-   ├─ PREREQUISITE_FOR: 学习依赖
+   ├─ PREREQUISITE_FOR: 学习依赖，其中前置关系，包含相关关系。
    └─ 笔记 (Note)
 ```
+
+其中 PART_OF 表示书籍与章节，父章节与子章节的层级关系。
+MENTIONED_IN 表示概念在某些章节中出现。
+RELATED_TO 表示概念之间的关联。
+PREREQUISITE_FOR 表示概念的前置依赖关系。
 
 ## 工作流示例
 

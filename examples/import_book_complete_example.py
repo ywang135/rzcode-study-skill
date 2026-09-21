@@ -278,42 +278,6 @@ def main():
 if __name__ == "__main__":
     sys.exit(main())
 
-            {
-                "canonical_name": "加速度",
-                "aliases": ["acceleration"],
-                "kind": "definition",
-                "definition": "单位时间内速度改变量的矢量。",
-                "summary": "描述速度变化快慢",
-                "chapter_title": "第1章 物体的运动",
-                "pages": "21-25",
-            },
-        ]
-
-        for c in concepts:
-            existing = api.search_concepts(c["canonical_name"], limit=1)
-            if not existing.get("results"):
-                api.create_concept(
-                    canonical_name=c["canonical_name"],
-                    aliases=c["aliases"],
-                    kind=c["kind"],
-                    definition=c["definition"],
-                    summary=c["summary"],
-                )
-
-            api.create_mentioned_in_edge(
-                concept_name=c["canonical_name"],
-                chapter_title=c["chapter_title"],
-                book_title=book_title,
-                pages=c["pages"],
-                role="introduced",
-            )
-
-        stats = api.get_stats()
-        print("导入完成:", stats)
-        return 0
-    finally:
-        api.close_db()
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

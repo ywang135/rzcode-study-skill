@@ -820,6 +820,272 @@ if not transaction.execute(stop_on_error=True):
 
 ---
 
+## 4. Concept Relationship Best Practices
+
+### Understanding Relationship Types
+
+The knowledge graph supports multiple relationship types between concepts, each serving distinct purposes:
+
+| Type | Semantics | Use Case |
+|------|-----------|----------|
+| `prerequisite_for` | A must be learned before B | Learning paths and dependencies |
+| `related_to` | A is thematically connected to B | Conceptual similarities, extensions |
+| `mentioned_in` | A appears in chapter B | Content location tracking |
+| `part_of` | A is a component of B | Hierarchical composition |
+
+### Core Rule: Prerequisite Excludes Related
+
+**When two concepts have an established `prerequisite_for` relationship, do NOT add a `related_to` relationship between them.**
+
+**Rationale:**
+- **Stronger Semantics**: `prerequisite_for` carries more precise learning-order information than the generic `related_to`
+- **Graph Clarity**: Avoiding redundant edges keeps the knowledge graph focused and prevents conceptual ambiguity
+- **Query Optimization**: Simpler relationship hierarchies improve search performance and traversal accuracy
+
+**Example:**
+
+```python
+# ✓ CORRECT: Use prerequisite only
+# Calculus is required to understand Gradient Descent
+create_prerequisite("Calculus", "Gradient Descent")
+
+# ✗ INCORRECT: Do NOT add both relationships
+# create_prerequisite("Calculus", "Gradient Descent")
+# create_related_to("Calculus", "Gradient Descent")  # Redundant!
+```
+
+### When to Use Each Relationship Type
+
+#### Prerequisite Relationships (Learning Paths)
+
+Use `prerequisite_for` when:
+- One concept must be mastered before understanding another
+- You're building a structured learning curriculum
+- There's a clear logical dependency
+- Example: "Linear Algebra" → "Matrix Decomposition"
+
+```python
+prerequisites = [
+    ("Calculus", "Gradient Descent"),
+    ("Linear Algebra", "Eigenvalues"),
+    ("Probability Theory", "Bayesian Methods"),
+    ("Python Basics", "NumPy"),
+]
+
+for prereq, dependent in prerequisites:
+    response = requests.post(
+        "https://rzcode.vip/api/study/relationships/prerequisites",
+        headers={"X-API-Key": api_key},
+        json={
+            "prerequisite_concept_title": prereq,
+            "dependent_concept_title": dependent
+        }
+    )
+```
+
+#### Related Relationships (Thematic Connections)
+
+Use `related_to` when:
+- Concepts share similarities but neither is a prerequisite
+- There are alternative approaches to the same problem
+- Concepts are applied in similar contexts
+- Example: "Gradient Descent" ↔ "Adam Optimizer" (both optimization methods)
+
+```python
+related_pairs = [
+    ("Gradient Descent", "Stochastic Gradient Descent", "variant_of"),
+    ("ReLU", "Sigmoid", "activation_function_alternatives"),
+    ("L1 Regularization", "L2 Regularization", "related_techniques"),
+]
+
+for concept_1, concept_2, relationship in related_pairs:
+    response = requests.post(
+        "https://rzcode.vip/api/study/relationships/related_to",
+        headers={"X-API-Key": api_key},
+        json={
+            "concept_title_1": concept_1,
+            "concept_title_2": concept_2,
+            "relationship": relationship
+        }
+    )
+```
+
+### Validation Strategy
+
+Before creating relationships, validate that prerequisites and related concepts don't overlap:
+
+```python
+def validate_relationship_consistency(concept_a, concept_b):
+    """
+    Validate that relationship types are consistent.
+    
+    Returns:
+        - "prerequisite": Only prerequisite exists
+        - "related": Only related exists
+        - "both": Both exist (INCONSISTENT - needs review)
+        - "none": Neither exists
+    """
+    
+    # Check for prerequisite relationship
+    has_prerequisite = check_prerequisite_exists(concept_a, concept_b)
+    
+    # Check for related relationship
+    has_related = check_related_exists(concept_a, concept_b)
+    
+    if has_prerequisite and has_related:
+        print(f"⚠️  WARNING: Both prerequisite and related found for {concept_a} ↔ {concept_b}")
+        print("    Recommendation: Remove the related_to relationship")
+        return "both"
+    
+    return "prerequisite" if has_prerequisite else ("related" if has_related else "none")
+
+def check_prerequisite_exists(concept_a, concept_b):
+    """Check if prerequisite relationship exists in either direction."""
+    response = requests.get(
+        f"https://rzcode.vip/api/study/graph/{concept_a}",
+        headers={"X-API-Key": api_key},
+        params={"depth": 1}
+    )
+    graph = response.json()
+    
+    for rel in graph.get('relationships', []):
+        if (rel['type'] == 'prerequisite_for' and 
+            rel['target'] == concept_b):
+            return True
+    
+    return False
+
+def check_related_exists(concept_a, concept_b):
+    """Check if related_to relationship exists in either direction."""
+    response = requests.get(
+        f"https://rzcode.vip/api/study/graph/{concept_a}",
+        headers={"X-API-Key": api_key},
+        params={"depth": 1}
+    )
+    graph = response.json()
+    
+    for rel in graph.get('relationships', []):
+        if (rel['type'] == 'related_to' and 
+            rel['target'] == concept_b):
+            return True
+    
+    return False
+```
+
+### Multi-Step Relationship Creation Workflow
+
+```python
+def create_concept_relationships_safely(relationships):
+    """
+    Create relationships with built-in validation.
+    
+    Args:
+        relationships: List of dicts with structure:
+            {
+                "type": "prerequisite" | "related",
+                "concept_1": "Concept Name",
+                "concept_2": "Concept Name",
+                "metadata": {...}  # Optional
+            }
+    """
+    
+    created = []
+    skipped = []
+    errors = []
+    
+    for rel in relationships:
+        concept_1 = rel["concept_1"]
+        concept_2 = rel["concept_2"]
+        rel_type = rel["type"]
+        
+        # Validate consistency
+        status = validate_relationship_consistency(concept_1, concept_2)
+        
+        if status == "both":
+            skipped.append({
+                "reason": "Redundant relationship (both prerequisite and related exist)",
+                "concepts": (concept_1, concept_2)
+            })
+            continue
+        
+        # Check if this specific relationship already exists
+        if (status == "prerequisite" and rel_type == "prerequisite") or \
+           (status == "related" and rel_type == "related"):
+            skipped.append({
+                "reason": f"Relationship already exists",
+                "concepts": (concept_1, concept_2),
+                "type": rel_type
+            })
+            continue
+        
+        # If adding related, but prerequisite exists, skip
+        if status == "prerequisite" and rel_type == "related":
+            skipped.append({
+                "reason": "Related skipped (prerequisite relationship already exists)",
+                "concepts": (concept_1, concept_2)
+            })
+            continue
+        
+        # Create the relationship
+        try:
+            if rel_type == "prerequisite":
+                endpoint = "/relationships/prerequisites"
+                data = {
+                    "prerequisite_concept_title": concept_1,
+                    "dependent_concept_title": concept_2
+                }
+            else:  # related
+                endpoint = "/relationships/related_to"
+                data = {
+                    "concept_title_1": concept_1,
+                    "concept_title_2": concept_2,
+                    "relationship": rel.get("metadata", {}).get("relationship_type")
+                }
+            
+            response = requests.post(
+                f"https://rzcode.vip/api/study{endpoint}",
+                headers={"X-API-Key": api_key},
+                json=data
+            )
+            response.raise_for_status()
+            
+            created.append({
+                "concepts": (concept_1, concept_2),
+                "type": rel_type
+            })
+            print(f"✓ Created {rel_type}: {concept_1} → {concept_2}")
+            
+        except Exception as e:
+            errors.append({
+                "concepts": (concept_1, concept_2),
+                "type": rel_type,
+                "error": str(e)
+            })
+            print(f"✗ Failed to create {rel_type}: {concept_1} ↔ {concept_2} - {e}")
+    
+    # Summary report
+    print(f"\n{'='*60}")
+    print(f"Relationship Creation Summary")
+    print(f"  Created: {len(created)}")
+    print(f"  Skipped: {len(skipped)}")
+    print(f"  Errors: {len(errors)}")
+    print(f"{'='*60}")
+    
+    if skipped:
+        print("\nSkipped relationships:")
+        for item in skipped:
+            print(f"  - {item['concepts'][0]} ↔ {item['concepts'][1]}: {item['reason']}")
+    
+    if errors:
+        print("\nFailed relationships:")
+        for item in errors:
+            print(f"  - {item['concepts'][0]} ↔ {item['concepts'][1]}: {item['error']}")
+    
+    return {"created": created, "skipped": skipped, "errors": errors}
+```
+
+---
+
 ## 5. Troubleshooting Guide
 
 ### Common Issues and Solutions
