@@ -81,17 +81,21 @@ class ConceptManager:
         data = {
             "concept_title_1": concept1,
             "concept_title_2": concept2,
-            "relationship": relationship
+            "relationship": relationship,
+            "source": "agent"
         }
-        return self._request("POST", "/relationships/related-to", json=data)
+        # 注意：路由必须用下划线 related_to，连字符 /related-to 是 404
+        return self._request("POST", "/relationships/related_to", json=data)
     
     def link_prerequisite(self, prerequisite: str, dependent: str) -> Dict[str, Any]:
         """Link two concepts as prerequisite"""
         data = {
             "prerequisite_concept_title": prerequisite,
-            "dependent_concept_title": dependent
+            "dependent_concept_title": dependent,
+            "source": "agent"
         }
-        return self._request("POST", "/relationships/prerequisite-for", json=data)
+        # 注意：路由必须用下划线 prerequisite_for，且三个字段都必填（缺一报 400）
+        return self._request("POST", "/relationships/prerequisite_for", json=data)
     
     def get_concept_graph(self, name: str, depth: int = 2) -> Dict[str, Any]:
         """Get knowledge graph around a concept"""

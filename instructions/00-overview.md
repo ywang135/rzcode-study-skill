@@ -117,13 +117,14 @@ response = requests.post(
     headers=headers
 )
 
-# 标记出现位置
+# 标记出现位置（注意：路由用下划线；role 与 source 两个字段都必须给，缺一个会 400）
 response = requests.post(
-    f"{config['api_host']}/api/study/relationships/mentioned-in",
+    f"{config['api_host']}/api/study/relationships/mentioned_in",
     json={
         "concept_title": "反向传播",
         "chapter_title": "第6章 深度学习基础",
-        "role": "核心算法"
+        "role": "核心算法",
+        "source": "agent"
     },
     headers=headers
 )

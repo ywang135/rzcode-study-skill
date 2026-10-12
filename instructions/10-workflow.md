@@ -8,10 +8,14 @@
 - Python 3.7+ with `requests` library
 - Base URL: `https://rzcode.vip/api/study` (production) or `http://localhost:8000/api/study` (development)
 
+> 📌 路由以 `tools/*.tool.json` 的 `endpoint` 字段为准，字段细节见 [20-tools.md](20-tools.md)。
+> 关键约定：创建书籍/概念/章节时名称放在路径里（`POST /books/{title}`、`POST /concepts/{name}`、`POST /books/{book}/chapters/{chapter}`，中文需 URL 编码）；创建笔记必须发 form-data；前置关系用 `POST /relationships/prerequisite_for`。
+
 ```python
 import requests
 import json
 import os
+from urllib.parse import quote
 
 # Load configuration
 def load_config():
@@ -71,10 +75,13 @@ def import_book_workflow(book_info, file_path):
         file_path: Path to book file
     """
     
-    # Step 1: Create book entry
+    # Step 1: Create book entry（title 放路径参数，body 只放 authors/edition）
     print(f"Creating book: {book_info['title']}")
-    book = api_call("POST", "/books", json=book_info)
-    print(f"✓ Book created: {book['id']}")
+    book = api_call("POST", f"/books/{quote(book_info['title'], safe='')}", json={
+        "authors": book_info.get("authors", []),
+        "edition": book_info.get("edition", "")
+    })
+    print(f"✓ Book created: {book.get('title', book_info['title'])}")
     
     # Step 2: Upload book file
     print(f"Uploading file: {file_path}")
@@ -109,7 +116,9 @@ def import_book_workflow(book_info, file_path):
     
     for chapter in chapters_data:
         print(f"Creating chapter: {chapter['title']}")
-        api_call("POST", "/chapters", json=chapter)
+        api_call("POST", f"/books/{quote(chapter['book_title'], safe='')}/chapters/{quote(chapter['title'], safe='')}", json={
+            k: v for k, v in chapter.items() if k not in ("book_title", "title")
+        })
     
     print("✓ Book import complete")
     return book
@@ -176,7 +185,9 @@ def extract_concepts_workflow(book_title, chapter_title, concepts):
         if "canonical_name" not in concept:
             concept["canonical_name"] = concept["name"].lower().replace(" ", "_")
         
-        result = api_call("POST", "/concepts", json=concept)
+        result = api_call("POST", f"/concepts/{quote(concept['name'], safe='')}", json={
+            k: v for k, v in concept.items() if k != "name"
+        })
         created_concepts.append(concept["name"])
     
     # Step 2: Link concepts to chapter
@@ -195,7 +206,8 @@ def extract_concepts_workflow(book_title, chapter_title, concepts):
         {
             "concept_title_1": "Gradient Descent",
             "concept_title_2": "Backpropagation",
-            "relationship": "used_by"
+            "relationship": "used_by",
+            "source": "agent"
         }
     ]
     
@@ -283,15 +295,14 @@ def add_notes_workflow(node_type, node_identifier):
     created_notes = []
     for note in text_notes:
         print(f"  Creating text note: {note['title']}")
-        result = api_call("POST", "/notes", json={
-            "node_type": node_type,
-            "node_identifier": node_identifier,
+        # 创建笔记必须发 form-data（用 data= 而非 json=），否则报 "Title cannot be empty"
+        result = api_call("POST", f"/notes/{node_type}/{quote(node_identifier, safe='')}", data={
             "title": note["title"],
             "content": note["content"],
             "file_type": note.get("file_type", "md"),
             "description": note.get("description", "")
         })
-        created_notes.append(result["id"])
+        created_notes.append(note["title"])
     
     # Step 2: List and verify notes
     print(f"Listing all notes for {node_identifier}")
@@ -357,14 +368,20 @@ def query_knowledge_graph_workflow(search_term):
     print(f"  Kind: {concept_details.get('kind')}")
     
     # Step 3: Explore knowledge graph
-    print(f"\nExploring relationships (depth=2)")
-    graph = api_call("GET", f"/graph/{top_concept}?depth=2&max_nodes=50")
-    
+    # 注意路由是复数 /graphs/{name}；返回 nodes[] / edges[] / metadata{}
+    graph = api_call("GET", f"/graphs/{top_concept}?depth=2")
+    print(f"  Nodes: {len(graph.get('nodes', []))}, Edges: {len(graph.get('edges', []))}")
+    for e in graph.get("edges", [])[:10]:
+        print(f"    {e['from']} -[{e['type']}]-> {e['to']}")
+
     # Step 4: Get graph statistics
-    stats = api_call("GET", "/graph-stats")
-    print(f"\nGraph Statistics:")
-    print(f"  Total Concepts: {stats['concepts']}")
-    print(f"  Total Books: {stats['books']}")
+    # 注意：/graphs/stats 当前服务端返回 500，这里做容错读取
+    try:
+        stats = api_call("GET", "/graphs/stats")
+        print(f"\nGraph Statistics:")
+        print(f"  Total Concepts: {stats.get('concepts')}")
+    except Exception as e:
+        print(f"\nGraph Statistics: unavailable ({e})，可退化为 GET /books 累加 chapters_count")
     
     return results
 
@@ -419,11 +436,17 @@ def batch_operations_workflow(operations_file):
     for op in operations:
         try:
             if op["type"] == "book":
-                result = api_call("POST", "/books", json=op["data"])
+                result = api_call("POST", f"/books/{quote(op['data']['title'], safe='')}", json={
+                    k: v for k, v in op["data"].items() if k != "title"
+                })
             elif op["type"] == "chapter":
-                result = api_call("POST", "/chapters", json=op["data"])
+                result = api_call("POST", f"/books/{quote(op['data']['book_title'], safe='')}/chapters/{quote(op['data']['title'], safe='')}", json={
+                    k: v for k, v in op["data"].items() if k not in ("book_title", "title")
+                })
             elif op["type"] == "concept":
-                result = api_call("POST", "/concepts", json=op["data"])
+                result = api_call("POST", f"/concepts/{quote(op['data']['name'], safe='')}", json={
+                    k: v for k, v in op["data"].items() if k != "name"
+                })
             
             results["success"].append(op["data"]["title"])
             print(f"  ✓ {op['type'].upper()}: {op['data'].get('title', op['data'].get('name'))}")
@@ -485,7 +508,9 @@ results = batch_operations_workflow("operations.json")
 
 ```python
 try:
-    result = api_call("POST", "/books", json=book_data)
+    result = api_call("POST", f"/books/{quote(book_data['title'], safe='')}", json={
+        k: v for k, v in book_data.items() if k != "title"
+    })
 except requests.exceptions.HTTPError as e:
     if e.response.status_code == 400:
         print(f"Validation error: {e.response.json()}")

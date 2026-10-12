@@ -88,7 +88,7 @@ class StudyAPIClient:
             "role": role,
             "quote": quote
         }
-        return self._request("POST", "/relationships/mentioned-in", json=data)
+        return self._request("POST", "/relationships/mentioned_in", json=data)
     
     def link_concepts(self, concept1: str, concept2: str,
                      relationship: str = "related") -> Dict[str, Any]:
@@ -98,7 +98,7 @@ class StudyAPIClient:
             "concept_title_2": concept2,
             "relationship": relationship
         }
-        return self._request("POST", "/relationships/related-to", json=data)
+        return self._request("POST", "/relationships/related_to", json=data)
     
     def create_note(self, node_type: str, node_identifier: str,
                    title: str, content: str, description: str = None) -> Dict[str, Any]:
@@ -259,7 +259,7 @@ def main():
         )
         print(f"✓ Note created for chapter")
         
-        print("\n" + "=" * 60)
+        print("=" * 60)
         print("✓ Complete import workflow finished successfully!")
         print("=" * 60)
         return 0
@@ -277,7 +277,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

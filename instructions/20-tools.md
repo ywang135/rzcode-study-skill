@@ -15,6 +15,40 @@ curl -H "X-API-Key: sk.your.api.key" https://rzcode.vip/api/study/books
 - **Production**: `https://rzcode.vip/api/study`
 - **Development**: `http://localhost:8000/api/study`
 
+### 使用须知
+
+**环境依赖**：Python 示例需要 `requests`（`pip install requests`）；批量导入也可用 `curl`（无额外依赖），脚本 [generate_import_cmds.py](../scripts/generate_import_cmds.py) 负责生成 curl 命令列表。GET 读接口（`/books`、`/books/{title}/chapters`）用 `curl -L` 即可。
+
+**路由约定**（以 `tools/*.tool.json` 的 `endpoint` 字段为准，已逐条核对可用）：
+
+| 操作 | Endpoint | 说明 |
+|---|---|---|
+| 创建/更新书籍 | `POST /books/{title}` | title 放**路径**参数（中文需 URL 编码），body：`{authors, edition}`（不要再把 title 放进 body） |
+| 创建/更新概念 | `POST /concepts/{name}` | body：`{canonical_name, kind, definition, aliases, summary}` |
+| 创建/更新章节 | `POST /books/{book_title}/chapters/{chapter_title}` | body：`{level, order, summary, parent_title}` |
+| 创建笔记 | `POST /notes/{node_type}/{node_identifier}` | **必须发 form-data**（`requests.post(..., data={...})`）；发 JSON 会报 `Title cannot be empty` |
+| 删除笔记 | `DELETE /notes/{t}/{id}/{note_id}` | `note_id` 填**笔记文件名（含 .md）**，如 `T2.md`；列表接口不返回 id，只能从 `path` 取 basename |
+| 前置关系 | `POST /relationships/prerequisite_for` | body：`{prerequisite_concept_title, dependent_concept_title, source}`（三个字段都必填，缺一报 400）。注意尾斜杠 `/prerequisite_for/` 与连字符 `/prerequisite-for` 都是 404 |
+| 图谱查询 | `GET /graphs/{name}` | 注意是复数 `graphs`，支持 `?depth=`；`GET /graphs/stats` 路由存在但**当前返回 500**，统计请退化为 `GET /books` 累加 `chapters_count` |
+| 图谱响应体 | — | `nodes[].id/label/kind/is_root` + `edges[].from/to/type/label` + `metadata{}`，详见 §15 |
+
+关系路由统一用**下划线**：`/relationships/mentioned_in`、`/relationships/related_to`、`/relationships/prerequisite_for`、`/relationships/part_of`（连字符写法 `/mentioned-in`、`/related-to`、`/prerequisite-for` 一律 404，`/relationships/prerequisites` 也是 404）。
+
+**`mentioned_in` 四个字段全部必填**：`concept_title`、`chapter_title`、`role`、`source`，缺任意一个都返回 `400 {"error":"concept_title, chapter_title, role and source are required"}`。
+
+**`related_to` 的 409 语义**：若两个概念之间已存在 `prerequisite_for`，再建 `related_to` 会返回 `409 PREREQUISITE_OF relationship already exists between A and B. No need to add RELATED_TO relationship.`。这是「前置关系优先、不要重复建 related_to」的预期行为，属正常取舍而非错误。
+
+**节点不存在时返回 404（HTML 页面而非 JSON）**：如 `related_to` 传入不存在的概念会拿到 `404 ... <p>Concept not found</p>`，需要用 URL 编码后的实体是否已创建来自查，不能只看状态码是不是 404。
+
+**`GET /books/{title}/chapters` 返回的是嵌套树**：`chapters[]` 下每层条目用 `subsections` 递归嵌套子节点，只看顶层会漏，`total` 字段为 null；校验总数必须递归累加。
+概念查询用 `GET /concepts/{name}`（中文名需 URL 编码），响应里没有 `name` 字段，显示名即 `canonical_name`。
+`GET /search?q=...` 返回的 `results[]` 同样没有 `name` 字段，只有 `canonical_name` / `kind` / `score`；且它是**模糊检索**（"相量"会召回"状态变量"等），不能用来判重，判重必须逐个 `GET /concepts/{name}` 看是否 404。
+
+**读图方向**：`GET /concepts/{name}` 的 `prerequisites` 字段列出的是**该概念自己的前置概念（incoming edges）**，与字段名一致，不需要反着读。
+示例：写入 `prerequisite_concept_title=正弦量, dependent_concept_title=相量` 后，查询 `相量` 的 `prerequisites` 显示 `正弦量`；查询 `正弦量` 的 `prerequisites` 为空。
+
+**`related_concepts` 的合并规则**：若一对概念之间**同时**存在 `related_to` 与 `prerequisite_for` 关系，`related_concepts` 只返回前置关系（体现在 `prerequisites` 字段），该对概念不再出现在 `related_concepts` 里。因此读取图谱时，`prerequisites` + `related_concepts` 两个字段要合起来看，缺一不可。
+
 ### HTTP Methods
 
 - `GET` - Retrieve resources
@@ -89,7 +123,7 @@ for book in books:
 
 **Purpose**: Create or update a book. Uses upsert semantics (create if not exists, update if exists).
 
-**Endpoint**: `POST /books`
+**Endpoint**: `POST /books/{title}`
 
 **Method**: POST
 
@@ -438,7 +472,7 @@ print(f"Concepts: {len(chapter['concepts'])}")
 
 **Purpose**: Create or update a chapter in a book with support for nested hierarchy.
 
-**Endpoint**: `POST /chapters`
+**Endpoint**: `POST /books/{book_title}/chapters/{chapter_title}`
 
 **Method**: POST
 
@@ -610,7 +644,7 @@ print(f"Definition: {concept['definition']}")
 
 **Purpose**: Create or update a concept definition.
 
-**Endpoint**: `POST /concepts`
+**Endpoint**: `POST /concepts/{name}`
 
 **Method**: POST
 
@@ -825,7 +859,7 @@ for result in results:
 
 **Purpose**: Get knowledge graph subgraph for a concept showing relationships.
 
-**Endpoint**: `GET /graph/{name}`
+**Endpoint**: `GET /graphs/{name}`（注意是**复数** `graphs`）
 
 **Method**: GET
 
@@ -839,45 +873,48 @@ for result in results:
 **Request Example**:
 ```bash
 curl -H "X-API-Key: sk.xxx.yyy" \
-  "https://rzcode.vip/api/study/graph/Gradient%20Descent?depth=2&max_nodes=50"
+  "https://rzcode.vip/api/study/graphs/%E7%9B%B8%E9%87%8F?depth=1"
 ```
 
-**Response Schema**:
+**Response Schema**：
 ```json
 {
   "nodes": [
-    {
-      "id": "node_1",
-      "name": "Gradient Descent",
-      "kind": "method"
-    },
-    {
-      "id": "node_2",
-      "name": "Backpropagation",
-      "kind": "method"
-    }
+    {"id": "相量图", "label": "相量图", "kind": "concept", "is_root": false, "status": null},
+    {"id": "相量", "label": "相量", "kind": "concept", "is_root": true, "status": null}
   ],
-  "relationships": [
-    {
-      "source": "node_1",
-      "target": "node_2",
-      "type": "related_to"
-    }
+  "edges": [
+    {"from": "相量", "to": "相量图", "label": "related", "type": "RELATED_TO"},
+    {"from": "正弦量", "to": "相量", "label": "prerequisite", "type": "PREREQUISITE_OF"}
   ],
-  "depth": 2
+  "metadata": {
+    "depth": 1,
+    "nodes_count": 6,
+    "edges_count": 5,
+    "root_concept": "相量",
+    "root_type": "concept"
+  }
 }
 ```
+
+要点：
+- 节点字段是 `id` / `label` / `kind` / `is_root`，**不是** `name`。
+- 边字段是 `from` / `to` / `type` / `label`，**不是** `source` / `target`；边列表的键名是 `edges`，**不是** `relationships`。
+- `type` 取值为 `RELATED_TO` / `PREREQUISITE_OF`（大写）。
+- `depth` 只在 `metadata` 里返回，顶层没有 `depth` 字段。
 
 **Example Usage**:
 ```python
 response = requests.get(
-    "https://rzcode.vip/api/study/graph/Neural%20Network",
+    "https://rzcode.vip/api/study/graphs/" + urllib.parse.quote("相量", safe=""),
     headers={"X-API-Key": "sk.xxx.yyy"},
-    params={"depth": 2, "max_nodes": 100}
+    params={"depth": 2}
 )
 graph = response.json()
 print(f"Nodes: {len(graph['nodes'])}")
-print(f"Relationships: {len(graph['relationships'])}")
+print(f"Edges: {len(graph['edges'])}")
+for e in graph["edges"]:
+    print(f"  {e['from']} -[{e['type']}]-> {e['to']}")
 ```
 
 **Error Cases**:
@@ -890,7 +927,7 @@ print(f"Relationships: {len(graph['relationships'])}")
 
 **Purpose**: Get overall knowledge graph statistics.
 
-**Endpoint**: `GET /graph-stats`
+**Endpoint**: `GET /graphs/stats`（注意复数 `graphs`。⚠️ 该接口当前返回 **500 Internal Server Error**，路由存在但服务端报错，短期请勿依赖；统计需求可退化为 `GET /books`（含 `chapters_count`）自行累加）
 
 **Method**: GET
 
@@ -898,10 +935,10 @@ print(f"Relationships: {len(graph['relationships'])}")
 
 **Request Example**:
 ```bash
-curl -H "X-API-Key: sk.xxx.yyy" "https://rzcode.vip/api/study/graph-stats"
+curl -H "X-API-Key: sk.xxx.yyy" "https://rzcode.vip/api/study/graphs/stats"
 ```
 
-**Response Schema**:
+**Response Schema**（预期结构，当前因服务端 500 未能验证）：
 ```json
 {
   "concepts": 245,
@@ -921,15 +958,22 @@ curl -H "X-API-Key: sk.xxx.yyy" "https://rzcode.vip/api/study/graph-stats"
 **Example Usage**:
 ```python
 response = requests.get(
-    "https://rzcode.vip/api/study/graph-stats",
+    "https://rzcode.vip/api/study/graphs/stats",
     headers={"X-API-Key": "sk.xxx.yyy"}
 )
-stats = response.json()
-print(f"Knowledge Graph Statistics:")
-print(f"  Concepts: {stats['concepts']}")
-print(f"  Books: {stats['books']}")
-print(f"  Chapters: {stats['chapters']}")
-print(f"  Notes: {stats['notes']}")
+if response.status_code == 500:
+    # 此接口当前返回 500；退化为按书籍累加
+    books = requests.get(
+        "https://rzcode.vip/api/study/books",
+        headers={"X-API-Key": "sk.xxx.yyy"},
+        params={"limit": 100}
+    ).json()["books"]
+    print(f"Books: {len(books)}")
+    print(f"Chapters: {sum(b.get('chapters_count', 0) for b in books)}")
+else:
+    response.raise_for_status()
+    stats = response.json()
+    print(f"  Concepts: {stats['concepts']}")
 ```
 
 ---
@@ -1008,7 +1052,7 @@ for rel in relationships:
 
 **Purpose**: Create or update concept prerequisite relationships for learning paths.
 
-**Endpoint**: `POST /relationships/prerequisites`
+**Endpoint**: `POST /relationships/prerequisite_for`
 
 **Method**: POST
 
@@ -1017,13 +1061,13 @@ for rel in relationships:
 {
   "prerequisite_concept_title": "string (required)",
   "dependent_concept_title": "string (required)",
-  "source": "enum (optional): agent|user (default: user)"
+  "source": "enum (required): agent|user"
 }
 ```
 
 **Request Example**:
 ```bash
-curl -X POST "https://rzcode.vip/api/study/relationships/prerequisites" \
+curl -X POST "https://rzcode.vip/api/study/relationships/prerequisite_for" \
   -H "X-API-Key: sk.xxx.yyy" \
   -H "Content-Type: application/json" \
   -d '{
@@ -1052,7 +1096,7 @@ prerequisites = [
 
 for prereq, dependent in prerequisites:
     response = requests.post(
-        "https://rzcode.vip/api/study/relationships/prerequisites",
+        "https://rzcode.vip/api/study/relationships/prerequisite_for",
         headers={"X-API-Key": "sk.xxx.yyy"},
         json={
             "prerequisite_concept_title": prereq,
@@ -1080,11 +1124,14 @@ for prereq, dependent in prerequisites:
 {
   "concept_title": "string (required)",
   "chapter_title": "string (required)",
-  "role": "string (optional): introduced|explained|applied|referenced",
+  "role": "string (required): introduced|explained|applied|referenced",
   "quote": "string (optional)",
-  "source": "enum (optional): agent|user (default: user)"
+  "source": "enum (required): agent|user"
 }
 ```
+
+> ⚠️ `role` 与 `source` 虽标注为 optional，但实际缺少任意一个都会返回
+> `400 {"error":"concept_title, chapter_title, role and source are required"}`。请一律显式传值。
 
 **Request Example**:
 ```bash
@@ -1195,6 +1242,8 @@ curl -X POST "https://rzcode.vip/api/study/relationships/part_of" \
 **Purpose**: Create or update a text note for a node (book, chapter, or concept).
 
 **Endpoint**: `POST /notes/{node_type}/{node_identifier}`
+
+> ⚠️ 该接口**必须发 form-data**（`requests.post(..., data={...})`），发 JSON 会报 `Title cannot be empty`。
 
 **Method**: POST
 

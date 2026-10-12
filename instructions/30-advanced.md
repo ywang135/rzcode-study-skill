@@ -2,6 +2,8 @@
 
 This guide covers advanced topics including batch operations, performance optimization, error handling, troubleshooting, and migration from v1.0.
 
+> 📌 本文所有示例与线上实现一致（路由以 `tools/*.tool.json` 的 `endpoint` 字段为准）。常用约定：创建书籍/概念/章节时名称放路径参数；关系路由用下划线（`/relationships/mentioned_in`、`/related_to`、`/prerequisite_for`）；图谱查询用复数 `GET /graphs/{name}`；创建笔记发 form-data。字段细节见 [20-tools.md](20-tools.md) 顶部的「使用须知」。
+
 ---
 
 ## 1. Batch Operations
@@ -25,6 +27,7 @@ def batch_import_strategy(books_config):
     
     import json
     from datetime import datetime
+    from urllib.parse import quote
     
     # Step 1: Validation
     print("Step 1: Validating data...")
@@ -39,9 +42,9 @@ def batch_import_strategy(books_config):
     for book_data in books_config:
         try:
             response = requests.post(
-                "https://rzcode.vip/api/study/books",
+                f"https://rzcode.vip/api/study/books/{quote(book_data['title'], safe='')}",
                 headers={"X-API-Key": api_key},
-                json=book_data
+                json={k: v for k, v in book_data.items() if k != "title"}
             )
             response.raise_for_status()
             books_created.append(response.json())
@@ -58,9 +61,9 @@ def batch_import_strategy(books_config):
             chapter['book_title'] = book['title']
             try:
                 response = requests.post(
-                    "https://rzcode.vip/api/study/chapters",
+                    f"https://rzcode.vip/api/study/books/{quote(chapter['book_title'], safe='')}/chapters/{quote(chapter['title'], safe='')}",
                     headers={"X-API-Key": api_key},
-                    json=chapter
+                    json={k: v for k, v in chapter.items() if k not in ("book_title", "title")}
                 )
                 response.raise_for_status()
                 chapters_created.append(response.json())
@@ -80,9 +83,9 @@ def batch_import_strategy(books_config):
         
         try:
             response = requests.post(
-                "https://rzcode.vip/api/study/concepts",
+                f"https://rzcode.vip/api/study/concepts/{quote(concept['name'], safe='')}",
                 headers={"X-API-Key": api_key},
-                json=concept
+                json={k: v for k, v in concept.items() if k != "name"}
             )
             response.raise_for_status()
             concepts_created.append(response.json())
@@ -403,7 +406,7 @@ session = create_session_with_retry()
 # Reuse session for multiple requests
 response1 = session.get("https://rzcode.vip/api/study/books")
 response2 = session.get("https://rzcode.vip/api/study/concepts/neural_network")
-response3 = session.post("https://rzcode.vip/api/study/books", json={...})
+response3 = session.post("https://rzcode.vip/api/study/books/New%20Book", json={"authors": [...]})
 ```
 
 ---
@@ -804,13 +807,13 @@ transaction = TransactionalBatchOperation(api_key)
 
 # Add operations
 transaction.add_operation(
-    "POST", "/books",
-    {"title": "New Book", "authors": ["Author"]},
+    "POST", "/books/New%20Book",
+    {"authors": ["Author"]},
     rollback_endpoint="/books/New%20Book"
 )
 transaction.add_operation(
-    "POST", "/chapters",
-    {"book_title": "New Book", "title": "Chapter 1", "level": 1, "order": 1}
+    "POST", "/books/New%20Book/chapters/Chapter%201",
+    {"level": 1, "order": 1}
 )
 
 # Execute with automatic rollback on error
@@ -874,11 +877,12 @@ prerequisites = [
 
 for prereq, dependent in prerequisites:
     response = requests.post(
-        "https://rzcode.vip/api/study/relationships/prerequisites",
+        "https://rzcode.vip/api/study/relationships/prerequisite_for",
         headers={"X-API-Key": api_key},
         json={
             "prerequisite_concept_title": prereq,
-            "dependent_concept_title": dependent
+            "dependent_concept_title": dependent,
+            "source": "agent"
         }
     )
 ```
@@ -939,36 +943,41 @@ def validate_relationship_consistency(concept_a, concept_b):
     
     return "prerequisite" if has_prerequisite else ("related" if has_related else "none")
 
-def check_prerequisite_exists(concept_a, concept_b):
-    """Check if prerequisite relationship exists in either direction."""
+def _fetch_subgraph(name, depth=1):
+    """GET /graphs/{name}（注意复数 graphs；单数 /graph/{name} 是 404）。
+    返回结构：nodes[{id,label,kind,is_root,status}]、edges[{from,to,type,label}]、metadata{}."""
     response = requests.get(
-        f"https://rzcode.vip/api/study/graph/{concept_a}",
+        f"https://rzcode.vip/api/study/graphs/{quote(name, safe='')}",
         headers={"X-API-Key": api_key},
-        params={"depth": 1}
+        params={"depth": depth}
     )
-    graph = response.json()
-    
-    for rel in graph.get('relationships', []):
-        if (rel['type'] == 'prerequisite_for' and 
-            rel['target'] == concept_b):
+    if response.status_code == 404:
+        return None
+    response.raise_for_status()
+    return response.json()
+
+
+def check_prerequisite_exists(concept_a, concept_b):
+    """Check if prerequisite relationship exists: a -> b。
+
+    edges 里 PREREQUISITE_OF 边的语义是 from 是 to 的前置。"""
+    graph = _fetch_subgraph(concept_a)
+    if not graph:
+        return False
+    for edge in graph.get("edges", []):
+        if edge.get("type") == "PREREQUISITE_OF" and edge.get("to") == concept_b:
             return True
-    
     return False
+
 
 def check_related_exists(concept_a, concept_b):
     """Check if related_to relationship exists in either direction."""
-    response = requests.get(
-        f"https://rzcode.vip/api/study/graph/{concept_a}",
-        headers={"X-API-Key": api_key},
-        params={"depth": 1}
-    )
-    graph = response.json()
-    
-    for rel in graph.get('relationships', []):
-        if (rel['type'] == 'related_to' and 
-            rel['target'] == concept_b):
+    graph = _fetch_subgraph(concept_a)
+    if not graph:
+        return False
+    for edge in graph.get("edges", []):
+        if edge.get("type") == "RELATED_TO" and concept_b in (edge.get("from"), edge.get("to")):
             return True
-    
     return False
 ```
 
@@ -1029,17 +1038,19 @@ def create_concept_relationships_safely(relationships):
         # Create the relationship
         try:
             if rel_type == "prerequisite":
-                endpoint = "/relationships/prerequisites"
+                endpoint = "/relationships/prerequisite_for"
                 data = {
                     "prerequisite_concept_title": concept_1,
-                    "dependent_concept_title": concept_2
+                    "dependent_concept_title": concept_2,
+                    "source": "agent"
                 }
             else:  # related
                 endpoint = "/relationships/related_to"
                 data = {
                     "concept_title_1": concept_1,
                     "concept_title_2": concept_2,
-                    "relationship": rel.get("metadata", {}).get("relationship_type")
+                    "relationship": rel.get("metadata", {}).get("relationship_type"),
+                    "source": "agent"
                 }
             
             response = requests.post(
@@ -1096,9 +1107,11 @@ def create_concept_relationships_safely(relationships):
 def verify_authentication():
     """Verify API key is valid."""
     try:
+        # /graphs/stats 当前返回 500，改用 /books 做连通性 + 鉴权自检
         response = requests.get(
-            "https://rzcode.vip/api/study/graph-stats",
-            headers={"X-API-Key": api_key}
+            "https://rzcode.vip/api/study/books",
+            headers={"X-API-Key": api_key},
+            params={"limit": 1}
         )
         if response.status_code == 401:
             print("ERROR: Invalid API key")
@@ -1225,9 +1238,11 @@ def diagnose_api_health():
     
     checks = {
         "Authentication": verify_authentication,
+        # /graphs/stats 当前返回 500；改用 /books 做连通性自检
         "Basic connectivity": lambda: requests.get(
-            "https://rzcode.vip/api/study/graph-stats",
-            headers={"X-API-Key": api_key}
+            "https://rzcode.vip/api/study/books",
+            headers={"X-API-Key": api_key},
+            params={"limit": 1}
         ).status_code == 200,
         "Book operations": lambda: requests.get(
             "https://rzcode.vip/api/study/books",
@@ -1323,9 +1338,9 @@ def migrate_from_v1_to_v2():
     for book in v2_data['books']:
         try:
             response = requests.post(
-                "https://rzcode.vip/api/study/books",
+                f"https://rzcode.vip/api/study/books/{quote(book['title'], safe='')}",
                 headers={"X-API-Key": api_key},
-                json=book
+                json={k: v for k, v in book.items() if k != "title"}
             )
             response.raise_for_status()
             successful += 1
